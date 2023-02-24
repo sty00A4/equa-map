@@ -163,6 +163,7 @@ impl Program {
         let ExprBox { expr, pos } = expr;
         match (expr_pattern, expr) {
             (ExprPattern::Atom(atom_pattern), Expr::Atom(atom)) => self.atom_pattern(atom_pattern, atom),
+            (ExprPattern::Atom(atom_pattern), expr) => self.atom_pattern(atom_pattern, ExprBox { expr, pos }.atom()),
             (ExprPattern::Binary { op: pattern_op, left: pattern_left, right: pattern_right }, Expr::Binary { op, left, right }) =>
             if pattern_op == op {
                 self.expr_pattern(*pattern_left, *left)?;
