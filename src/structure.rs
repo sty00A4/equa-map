@@ -114,7 +114,8 @@ pub enum Expr {
     Binary { op: BinaryOperator, left: Box<ExprBox>, right: Box<ExprBox> },
     Unary { op: UnaryOperator, expr: Box<ExprBox> },
     Map { from: ExprPattern, to: Box<ExprBox> }, Apply { expr: Box<ExprBox>, pattern: Box<ExprBox> },
-    Call { func: Box<ExprBox>, pattern: Box<ExprBox> }
+    Iter { over: Box<ExprBox>, map: Box<ExprBox> }, Filter { over: Box<ExprBox>, map: Box<ExprBox> },
+    Call { func: Box<ExprBox>, pattern: Box<ExprBox> },
 }
 impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -124,6 +125,8 @@ impl Display for Expr {
             Self::Unary { op, expr } => write!(f, "{op} {expr}"),
             Self::Map { from, to } => write!(f, "{from} -> {to}"),
             Self::Apply { expr, pattern } => write!(f, "{expr} <- {pattern}"),
+            Self::Iter { over, map } => write!(f, "{over} << {map}"),
+            Self::Filter { over, map } => write!(f, "{over} <! {map}"),
             Self::Call { func, pattern } => write!(f, "{func}({pattern})"),
         }
     }
@@ -263,7 +266,7 @@ impl Parser {
         }
     }
     pub fn expr(&mut self) -> Result<ExprBox, Error> {
-        let mut left = self.map()?;
+        let mut left = self.over()?;
         while let Some(Token { token, pos: _ }) = self.token_ref() {
             if token != &TokenType::Apply { break }
             let mut pos = left.pos.clone();
@@ -271,6 +274,22 @@ impl Parser {
             let pattern = Box::new(self.expr()?);
             pos.extend(&pattern.pos);
             left = ExprBox::new(Expr::Apply { expr: Box::new(left), pattern }, pos)
+        }
+        Ok(left)
+    }
+    pub fn over(&mut self) -> Result<ExprBox, Error> {
+        let mut left = self.map()?;
+        while let Some(Token { token, pos: _ }) = self.token_ref() {
+            if ![TokenType::Iter, TokenType::Filter].contains(token) { break }
+            let mut pos = left.pos.clone();
+            let Token { token, pos: _ } = self.token().unwrap();
+            let map = Box::new(self.map()?);
+            pos.extend(&map.pos);
+            match token {
+                TokenType::Iter => left = ExprBox::new(Expr::Iter { over: Box::new(left), map }, pos),
+                TokenType::Filter => left = ExprBox::new(Expr::Filter { over: Box::new(left), map }, pos),
+                _ => panic!("in Parser.over: token unhandled")
+            }
         }
         Ok(left)
     }

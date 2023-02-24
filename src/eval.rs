@@ -58,6 +58,15 @@ impl Value {
             Value::Number(0.)
         }
     }
+    pub fn bool(&self) -> bool {
+        match self {
+            Self::Number(number) => *number != 0.,
+            Self::Vector(vector) => vector.len() > 0,
+            Self::Tuple(tuple) => tuple.len() > 0,
+            Self::Set(set) => set.len() > 0,
+            Self::Map(_) => true,
+        }
+    }
 }
 impl Hash for Value {
     fn hash<H: std::hash::Hasher>(&self, _: &mut H) {}
@@ -409,7 +418,7 @@ impl Program {
             }
         }
     }
-    pub fn eval_map(&mut self, map: MapType, expr: Box<ExprBox>, pos: Position) -> Result<Value, Error> {
+    pub fn eval_map(&mut self, map: MapType, expr: Box<ExprBox>) -> Result<Value, Error> {
         match map {
             MapType::Map(from, to) => {
                 let error_add = format!(": {from} != {expr}");
@@ -422,6 +431,7 @@ impl Program {
             }
             MapType::Foreign(from, func) => {
                 let error_add = format!(": {from} != {expr}");
+                let pos = expr.pos.clone();
                 let res = self.expr_pattern(from, *expr);
                 if let Err(mut res) = res {
                     res.msg.push_str(error_add.as_str());
@@ -447,17 +457,90 @@ impl Program {
             }
             Expr::Map { from, to } => Ok(Value::Map(MapType::Map(from, *to))),
             Expr::Apply { expr, pattern } => {
+                let map_pos = pattern.pos.clone();
                 let map = self.expr(*pattern)?;
                 if let Value::Map(map) = map {
-                    self.eval_map(map, expr, pos)
+                    self.eval_map(map, expr)
                 } else {
-                    Err(Error::new(format!("expected a map, not value: {map}"), Some(pos), self.path.clone()))
+                    Err(Error::new(format!("expected a map, not value: {map}"), Some(map_pos), self.path.clone()))
+                }
+            }
+            Expr::Iter { over, map } => {
+                let ExprBox { expr: over, pos: over_pos } = *over;
+                let map_pos = map.pos.clone();
+                let map = self.expr(*map)?;
+                if let Value::Map(map) = map {
+                    match over {
+                        Expr::Atom(AtomBox { atom: Atom::Vector(exprs), pos: _ }) => {
+                            let mut values = vec![];
+                            for expr in exprs {
+                                values.push(self.eval_map(map.clone(), Box::new(expr))?);
+                            }
+                            Ok(Value::Vector(values))
+                        }
+                        Expr::Atom(AtomBox { atom: Atom::Tuple(exprs), pos: _ }) => {
+                            let mut values = vec![];
+                            for expr in exprs {
+                                values.push(self.eval_map(map.clone(), Box::new(expr))?);
+                            }
+                            Ok(Value::Tuple(values))
+                        }
+                        Expr::Atom(AtomBox { atom: Atom::Set(exprs), pos: _ }) => {
+                            let mut values = HashSet::new();
+                            for expr in exprs {
+                                values.insert(self.eval_map(map.clone(), Box::new(expr))?);
+                            }
+                            Ok(Value::Set(values))
+                        }
+                        over => Err(Error::new(format!("cannot iterate over: {}", over), Some(over_pos), self.path.clone()))
+                    }
+                } else {
+                    Err(Error::new(format!("expected a map, not value: {map}"), Some(map_pos), self.path.clone()))
+                }
+            }
+            Expr::Filter { over, map } => {
+                let ExprBox { expr: over, pos: over_pos } = *over;
+                let map_pos = map.pos.clone();
+                let map = self.expr(*map)?;
+                if let Value::Map(map) = map {
+                    match over {
+                        Expr::Atom(AtomBox { atom: Atom::Vector(exprs), pos: _ }) => {
+                            let mut values = vec![];
+                            for expr in exprs {
+                                if self.eval_map(map.clone(), Box::new(expr.clone()))?.bool() {
+                                    values.push(self.expr(expr)?);
+                                }
+                            }
+                            Ok(Value::Vector(values))
+                        }
+                        Expr::Atom(AtomBox { atom: Atom::Tuple(exprs), pos: _ }) => {
+                            let mut values = vec![];
+                            for expr in exprs {
+                                if self.eval_map(map.clone(), Box::new(expr.clone()))?.bool() {
+                                    values.push(self.expr(expr)?);
+                                }
+                            }
+                            Ok(Value::Tuple(values))
+                        }
+                        Expr::Atom(AtomBox { atom: Atom::Set(exprs), pos: _ }) => {
+                            let mut values = HashSet::new();
+                            for expr in exprs {
+                                if self.eval_map(map.clone(), Box::new(expr.clone()))?.bool() {
+                                    values.insert(self.expr(expr)?);
+                                }
+                            }
+                            Ok(Value::Set(values))
+                        }
+                        over => Err(Error::new(format!("cannot iterate over: {}", over), Some(over_pos), self.path.clone()))
+                    }
+                } else {
+                    Err(Error::new(format!("expected a map, not value: {map}"), Some(map_pos), self.path.clone()))
                 }
             }
             Expr::Call { func, pattern } => {
                 let map = self.expr(*func)?;
                 if let Value::Map(map) = map {
-                    self.eval_map(map, pattern, pos)
+                    self.eval_map(map, pattern)
                 } else {
                     Err(Error::new(format!("expected a map, not value: {map}"), Some(pos), self.path.clone()))
                 }

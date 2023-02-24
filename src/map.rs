@@ -70,6 +70,8 @@ impl ExprPattern {
             }),
             Expr::Map { from: _, to: _ } => Err(Error::new("cannot convert a map to a pattern".into(), Some(expr.pos), None)),
             Expr::Apply { expr: _, pattern: _ } => Err(Error::new("cannot convert a application to a pattern".into(), Some(expr.pos), None)),
+            Expr::Iter { over: _, map: _ } => Err(Error::new("cannot convert a iteration to a pattern".into(), Some(expr.pos), None)),
+            Expr::Filter { over: _, map: _ } => Err(Error::new("cannot convert a filter to a pattern".into(), Some(expr.pos), None)),
             Expr::Call { func: _, pattern: _ } => Err(Error::new("cannot convert a call to a pattern".into(), Some(expr.pos), None)),
         }
     }
