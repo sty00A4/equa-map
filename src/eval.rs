@@ -689,12 +689,18 @@ pub fn std_program(path: Option<&String>) -> Program {
     program.define("exp".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _exp)),
     true);
+    program.define("exp_m1".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _exp_m1)),
+    true);
     program.define("exp2".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _exp2)),
     true);
     
     program.define("ln".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _ln)),
+    true);
+    program.define("ln_1p".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _ln_1p)),
     true);
 
     program.define("log10".into(),
@@ -1233,6 +1239,37 @@ fn exp(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
         Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "exp", x.typ()), Some(pos), program.path.clone())),
     }
 }
+fn _exp_m1(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    exp_m1(x, program, pos)
+}
+fn exp_m1(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.exp_m1())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(exp_m1(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(exp_m1(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(exp_m1(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "exp_m1", x.typ()), Some(pos), program.path.clone())),
+    }
+}
 fn _exp2(program: &mut Program, pos: Position) -> Result<Value, Error> {
     let x = program.get(&"x".into()).unwrap().clone();
     exp2(x, program, pos)
@@ -1293,6 +1330,37 @@ fn ln(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
             Ok(Value::Set(new_set))
         }
         Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "ln", x.typ()), Some(pos), program.path.clone())),
+    }
+}
+fn _ln_1p(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    ln_1p(x, program, pos)
+}
+fn ln_1p(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.ln_1p())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(ln_1p(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(ln_1p(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(ln_1p(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "ln_1p", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _log10(program: &mut Program, pos: Position) -> Result<Value, Error> {
