@@ -3,13 +3,15 @@ use crate::{error::*, lexer::*, map::ExprPattern};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Atom {
-    Number(f64), Var(String), Expr(Box<ExprBox>),
+    Number(f64), Inf, NaN, Var(String), Expr(Box<ExprBox>),
     Vector(Vec<ExprBox>), Tuple(Vec<ExprBox>), Set(Vec<ExprBox>),
 }
 impl Display for Atom {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Number(n) => write!(f, "{n}"),
+            Self::Inf => write!(f, "inf"),
+            Self::NaN => write!(f, "NaN"),
             Self::Var(v) => write!(f, "{v}"),
             Self::Expr(expr) => write!(f, "({expr})"),
             Self::Vector(v) => write!(f, "[{}]", v.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(", ")),
@@ -41,7 +43,7 @@ impl Display for AtomBox {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
     Add, Sub, Mul, Div, Mod, Pow,
-    EQ, NE, LT, GT, LE, GE,
+    EQ, NE, LT, GT, LE, GE, And, Or,
     AddSub, Concat, Remove,
 }
 impl BinaryOperator {
@@ -59,6 +61,8 @@ impl BinaryOperator {
             TokenType::GT => Self::GT,
             TokenType::LE => Self::LE,
             TokenType::GE => Self::GE,
+            TokenType::And => Self::And,
+            TokenType::Or => Self::Or,
             TokenType::AddSub => Self::AddSub,
             TokenType::Concat => Self::Concat,
             TokenType::Remove => Self::Remove,
@@ -81,6 +85,8 @@ impl Display for BinaryOperator {
             Self::GT => write!(f, ">"),
             Self::LE => write!(f, "<="),
             Self::GE => write!(f, ">="),
+            Self::And => write!(f, "and"),
+            Self::Or => write!(f, "or"),
             Self::AddSub => write!(f, "+-"),
             Self::Concat => write!(f, "++"),
             Self::Remove => write!(f, "+-"),
@@ -294,14 +300,29 @@ impl Parser {
         Ok(left)
     }
     pub fn map(&mut self) -> Result<ExprBox, Error> {
-        let mut left = self.comp()?;
+        let mut left = self.logic()?;
         while let Some(Token { token, pos: _ }) = self.token_ref() {
             if token != &TokenType::Map { break }
             let mut pos = left.pos.clone();
             self.token().unwrap();
-            let to = Box::new(self.comp()?);
+            let to = Box::new(self.logic()?);
             pos.extend(&to.pos);
             left = ExprBox::new(Expr::Map { from: ExprPattern::from_expr(left)?, to }, pos);
+        }
+        Ok(left)
+    }
+    pub fn logic(&mut self) -> Result<ExprBox, Error> {
+        let mut left = self.comp()?;
+        while let Some(Token { token, pos: _ }) = self.token_ref() {
+            if ![TokenType::And, TokenType::Or].contains(token) {
+                break
+            }
+            let mut pos = left.pos.clone();
+            let Token { token: op, pos: _ } = self.token().unwrap();
+            let op = BinaryOperator::from_token(op);
+            let right = Box::new(self.comp()?);
+            pos.extend(&right.pos);
+            left = ExprBox::new(Expr::Binary { op, left: Box::new(left), right }, pos)
         }
         Ok(left)
     }
@@ -392,6 +413,8 @@ impl Parser {
         };
         match token {
             TokenType::Number(n) => Ok(AtomBox::new(Atom::Number(n), pos)),
+            TokenType::Inf => Ok(AtomBox::new(Atom::Inf, pos)),
+            TokenType::NaN => Ok(AtomBox::new(Atom::NaN, pos)),
             TokenType::Var(n) => Ok(AtomBox::new(Atom::Var(n), pos)),
             TokenType::EvalIn => {
                 let expr = self.expr()?;

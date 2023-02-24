@@ -3,9 +3,9 @@ use crate::error::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
-    Number(f64), Var(String),
+    Number(f64), Inf, NaN, Var(String),
     Add, Sub, Mul, Div, Mod, Pow,
-    EQ, NE, LT, GT, LE, GE,
+    EQ, NE, LT, GT, LE, GE, And, Or,
     AddSub, Concat, Remove,
     Len, Map, Apply, Iter, Filter,
     EvalIn, EvalOut, VecIn, VecOut, SetIn, SetOut,
@@ -13,6 +13,15 @@ pub enum TokenType {
     End, Sep
 }
 impl TokenType {
+    pub fn kw(id: String) -> Self {
+        match id.as_str() {
+            "inf" => Self::Inf,
+            "NaN" => Self::NaN,
+            "and" => Self::And,
+            "or" => Self::Or,
+            _ => Self::Var(id)
+        }
+    }
     pub fn name(&self) -> String {
         match self {
             Self::Number(_) => "number".into(),
@@ -25,6 +34,8 @@ impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Number(v) => write!(f, "{v}"),
+            Self::Inf => write!(f, "inf"),
+            Self::NaN => write!(f, "NaN"),
             Self::Var(v) => write!(f, "{v}"),
             Self::Add => write!(f, "+"),
             Self::Sub => write!(f, "-"),
@@ -38,6 +49,8 @@ impl Display for TokenType {
             Self::GT => write!(f, ">"),
             Self::LE => write!(f, "<="),
             Self::GE => write!(f, ">="),
+            Self::And => write!(f, "and"),
+            Self::Or => write!(f, "or"),
             Self::AddSub => write!(f, "+-"),
             Self::Concat => write!(f, "++"),
             Self::Remove => write!(f, "--"),
@@ -293,7 +306,7 @@ impl Lexer {
                     pos.extend(&self.pos());
                     self.advance();
                 }
-                Ok(Some(Token::new(TokenType::Var(var), pos)))
+                Ok(Some(Token::new(TokenType::kw(var), pos)))
             }
             c => Err(Error::new(format!("bad character {c:?}"), Some(pos), Some(self.path.clone())))
         }

@@ -366,6 +366,12 @@ impl Program {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::from_bool(n1 >= n2)),
                         (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
+                    BinaryOperator::And => match (left, right) {
+                        (left, right) => Ok(Value::from_bool(left.bool() && right.bool())),
+                    }
+                    BinaryOperator::Or => match (left, right) {
+                        (left, right) => Ok(Value::from_bool(left.bool() || right.bool())),
+                    }
                     BinaryOperator::AddSub => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::Tuple(vec![Value::Number(n1 + n2), Value::Number(n1 - n2)])),
                         (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
@@ -551,6 +557,8 @@ impl Program {
         let AtomBox { atom, pos } = atom;
         match atom {
             Atom::Number(n) => Ok(Value::Number(n)),
+            Atom::Inf => Ok(Value::Number(f64::INFINITY)),
+            Atom::NaN => Ok(Value::Number(f64::NAN)),
             Atom::Var(v) => match self.get(&v) {
                 Some(value) => Ok(value.clone()),
                 None => Err(Error::new(format!("{v:?} not found"), Some(pos), self.path.clone()))
