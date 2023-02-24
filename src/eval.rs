@@ -632,6 +632,15 @@ pub fn std_program(path: Option<&String>) -> Program {
         Program::new()
     };
 
+    program.define("round".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _round)),
+    true);
+    program.define("ceil".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _ceil)),
+    true);
+    program.define("floor".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _floor)),
+    true);
     program.define("abs".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _abs)),
     true);
@@ -673,6 +682,99 @@ pub fn std_program(path: Option<&String>) -> Program {
     true);
 
     program
+}
+fn _round(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    round(x, program, pos)
+}
+fn round(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.abs())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(round(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(round(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(round(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "round", x.typ()), Some(pos), program.path.clone())),
+    }
+}
+fn _floor(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    floor(x, program, pos)
+}
+fn floor(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.floor())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(floor(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(floor(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(floor(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "floor", x.typ()), Some(pos), program.path.clone())),
+    }
+}
+fn _ceil(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    ceil(x, program, pos)
+}
+fn ceil(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.ceil())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(ceil(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(ceil(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(ceil(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "ceil", x.typ()), Some(pos), program.path.clone())),
+    }
 }
 fn _abs(program: &mut Program, pos: Position) -> Result<Value, Error> {
     let x = program.get(&"x".into()).unwrap().clone();
