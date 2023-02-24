@@ -744,7 +744,7 @@ fn sqrt(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "sqrt", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "sqrt", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _round(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -775,7 +775,7 @@ fn round(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error>
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "round", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "round", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _floor(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -806,7 +806,7 @@ fn floor(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error>
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "floor", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "floor", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _ceil(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -837,7 +837,7 @@ fn ceil(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "ceil", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "ceil", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _abs(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -868,7 +868,7 @@ fn abs(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "abs", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "abs", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _sin(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -899,7 +899,7 @@ fn sin(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "sin", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "sin", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _sinh(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -930,7 +930,7 @@ fn sinh(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "sinh", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "sinh", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _cos(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -961,7 +961,7 @@ fn cos(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "cos", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "cos", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _cosh(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -992,7 +992,7 @@ fn cosh(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "cosh", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "cosh", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _tan(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1023,7 +1023,7 @@ fn tan(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "tan", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "tan", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _tanh(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1054,7 +1054,7 @@ fn tanh(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "tanh", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "tanh", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _asin(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1085,7 +1085,7 @@ fn asin(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "asin", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "asin", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _asinh(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1116,7 +1116,7 @@ fn asinh(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error>
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "asinh", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "asinh", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _acos(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1147,7 +1147,7 @@ fn acos(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "acos", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "acos", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _acosh(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1178,7 +1178,7 @@ fn acosh(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error>
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "acosh", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "acosh", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _atan(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1209,7 +1209,7 @@ fn atan(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "atan", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "atan", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _atanh(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1240,7 +1240,7 @@ fn atanh(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error>
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "atanh", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "atanh", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _exp(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1271,7 +1271,7 @@ fn exp(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "exp", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "exp", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _exp_m1(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1302,7 +1302,7 @@ fn exp_m1(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "exp_m1", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "exp_m1", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _exp2(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1333,7 +1333,7 @@ fn exp2(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "exp2", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "exp2", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _ln(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1364,7 +1364,7 @@ fn ln(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "ln", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "ln", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _ln_1p(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1395,7 +1395,7 @@ fn ln_1p(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error>
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "ln_1p", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "ln_1p", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _log10(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1426,7 +1426,7 @@ fn log10(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error>
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "log10", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "log10", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _log2(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1457,7 +1457,7 @@ fn log2(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "log2", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "log2", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _signum(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -1488,6 +1488,6 @@ fn signum(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error
             }
             Ok(Value::Set(new_set))
         }
-        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "signum", x.typ()), Some(pos), program.path.clone())),
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "signum", x.typ()), Some(pos), program.path.clone())),
     }
 }
