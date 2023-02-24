@@ -221,14 +221,20 @@ impl Program {
                     }
                     return Ok(Value::Vector(v1))
                 }
+                (Value::Set(mut v1), Value::Set(v2)) => { // union
+                    for v in v2 {
+                        v1.insert(v);
+                    }
+                    return Ok(Value::Set(v1))
+                }
                 (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
             }
             BinaryOperator::Remove => match (left, right) {
-                (Value::Vector(mut v1), Value::Vector(v2)) if v1.len() == v2.len() => {
+                (Value::Set(mut v1), Value::Set(v2)) => { // complement
                     for v in v2 {
-                        v1.push(v);
+                        v1.remove(&v);
                     }
-                    return Ok(Value::Vector(v1))
+                    return Ok(Value::Set(v1))
                 }
                 (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
             }
@@ -268,6 +274,15 @@ impl Program {
                     }
                     BinaryOperator::Sub => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1 - n2)),
+                        (Value::Set(v1), Value::Set(v2)) => { // intersection
+                            let mut values = HashSet::new();
+                            for v in v2 {
+                                if v1.contains(&v) {
+                                    values.insert(v);
+                                }
+                            }
+                            return Ok(Value::Set(values))
+                        }
                         (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::Mul => match (left, right) {
