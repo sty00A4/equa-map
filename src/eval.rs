@@ -593,8 +593,6 @@ impl Program {
         let AtomBox { atom, pos } = atom;
         match atom {
             Atom::Number(n) => Ok(Value::Number(n)),
-            Atom::Inf => Ok(Value::Number(f64::INFINITY)),
-            Atom::NaN => Ok(Value::Number(f64::NAN)),
             Atom::Var(v) => match self.get(&v) {
                 Some(value) => Ok(value.clone()),
                 None => Err(Error::new(format!("{v:?} not found"), Some(pos), self.path.clone()))

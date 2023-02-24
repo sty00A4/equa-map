@@ -3,15 +3,13 @@ use crate::{error::*, lexer::*, map::ExprPattern};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Atom {
-    Number(f64), Inf, NaN, Var(String), Expr(Box<ExprBox>),
+    Number(f64), Var(String), Expr(Box<ExprBox>),
     Vector(Vec<ExprBox>), Tuple(Vec<ExprBox>), Set(Vec<ExprBox>),
 }
 impl Display for Atom {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Number(n) => write!(f, "{n}"),
-            Self::Inf => write!(f, "inf"),
-            Self::NaN => write!(f, "NaN"),
             Self::Var(v) => write!(f, "{v}"),
             Self::Expr(expr) => write!(f, "({expr})"),
             Self::Vector(v) => write!(f, "[{}]", v.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(", ")),
@@ -413,8 +411,6 @@ impl Parser {
         };
         match token {
             TokenType::Number(n) => Ok(AtomBox::new(Atom::Number(n), pos)),
-            TokenType::Inf => Ok(AtomBox::new(Atom::Inf, pos)),
-            TokenType::NaN => Ok(AtomBox::new(Atom::NaN, pos)),
             TokenType::Var(n) => Ok(AtomBox::new(Atom::Var(n), pos)),
             TokenType::EvalIn => {
                 let expr = self.expr()?;

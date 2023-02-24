@@ -3,7 +3,7 @@ use crate::error::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
-    Number(f64), Inf, NaN, Var(String),
+    Number(f64), Var(String),
     Add, Sub, Mul, Div, Mod, Pow,
     EQ, NE, LT, GT, LE, GE, And, Or,
     AddSub, Concat, Remove,
@@ -15,8 +15,9 @@ pub enum TokenType {
 impl TokenType {
     pub fn kw(id: String) -> Self {
         match id.as_str() {
-            "inf" => Self::Inf,
-            "NaN" => Self::NaN,
+            "inf" => Self::Number(f64::INFINITY),
+            "NaN" => Self::Number(f64::NAN),
+            "E" => Self::Number(f64::EPSILON),
             "and" => Self::And,
             "or" => Self::Or,
             _ => Self::Var(id)
@@ -34,8 +35,6 @@ impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Number(v) => write!(f, "{v}"),
-            Self::Inf => write!(f, "inf"),
-            Self::NaN => write!(f, "NaN"),
             Self::Var(v) => write!(f, "{v}"),
             Self::Add => write!(f, "+"),
             Self::Sub => write!(f, "-"),

@@ -7,15 +7,13 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AtomPattern {
-    Number(f64), Inf, NaN, Var(String), Expr(Box<ExprPattern>),
+    Number(f64), Var(String), Expr(Box<ExprPattern>),
     Vector(Vec<ExprPattern>), Tuple(Vec<ExprPattern>), Set(Vec<ExprPattern>),
 }
 impl AtomPattern {
     pub fn from_atom(atom: AtomBox) -> Result<Self, Error> {
         match atom.atom {
             Atom::Number(n) => Ok(AtomPattern::Number(n)),
-            Atom::Inf => Ok(AtomPattern::Inf),
-            Atom::NaN => Ok(AtomPattern::NaN),
             Atom::Var(v) => Ok(AtomPattern::Var(v)),
             Atom::Expr(expr) => Ok(AtomPattern::Expr(Box::new(ExprPattern::from_expr(*expr)?))),
             Atom::Vector(v) => {
@@ -46,8 +44,6 @@ impl Display for AtomPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Number(n) => write!(f, "{n}"),
-            Self::Inf => write!(f, "inf"),
-            Self::NaN => write!(f, "NaN"),
             Self::Var(v) => write!(f, "{v}"),
             Self::Expr(expr) => write!(f, "({expr})"),
             Self::Vector(values) => write!(f, "[{}]", values.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(" ")),
