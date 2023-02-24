@@ -632,6 +632,9 @@ pub fn std_program(path: Option<&String>) -> Program {
         Program::new()
     };
 
+    program.define("sqrt".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _sqrt)),
+    true);
     program.define("round".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _round)),
     true);
@@ -641,11 +644,9 @@ pub fn std_program(path: Option<&String>) -> Program {
     program.define("floor".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _floor)),
     true);
-
     program.define("abs".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _abs)),
     true);
-
     program.define("sin".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _sin)),
     true);
@@ -685,7 +686,6 @@ pub fn std_program(path: Option<&String>) -> Program {
     program.define("atanh".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _atanh)),
     true);
-    
     program.define("exp".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _exp)),
     true);
@@ -695,22 +695,57 @@ pub fn std_program(path: Option<&String>) -> Program {
     program.define("exp2".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _exp2)),
     true);
-    
     program.define("ln".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _ln)),
     true);
     program.define("ln_1p".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _ln_1p)),
     true);
-
     program.define("log10".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _log10)),
     true);
     program.define("log2".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _log2)),
     true);
+    program.define("log2".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _log2)),
+    true);
+    program.define("signum".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _signum)),
+    true);
 
     program
+}
+fn _sqrt(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    sqrt(x, program, pos)
+}
+fn sqrt(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.sqrt())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(sqrt(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(sqrt(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(sqrt(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "sqrt", x.typ()), Some(pos), program.path.clone())),
+    }
 }
 fn _round(program: &mut Program, pos: Position) -> Result<Value, Error> {
     let x = program.get(&"x".into()).unwrap().clone();
@@ -1423,5 +1458,36 @@ fn log2(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             Ok(Value::Set(new_set))
         }
         Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "log2", x.typ()), Some(pos), program.path.clone())),
+    }
+}
+fn _signum(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    signum(x, program, pos)
+}
+fn signum(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.signum())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(signum(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(signum(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(signum(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "signum", x.typ()), Some(pos), program.path.clone())),
     }
 }
