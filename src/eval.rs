@@ -638,8 +638,14 @@ pub fn std_program(path: Option<&String>) -> Program {
     program.define("sin".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _sin)),
     true);
+    program.define("sinh".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _sinh)),
+    true);
     program.define("cos".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _cos)),
+    true);
+    program.define("cosh".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _cosh)),
     true);
     program.define("tan".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _tan)),
@@ -650,8 +656,14 @@ pub fn std_program(path: Option<&String>) -> Program {
     program.define("asin".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _asin)),
     true);
+    program.define("asinh".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _asinh)),
+    true);
     program.define("acos".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _acos)),
+    true);
+    program.define("acosh".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _acosh)),
     true);
     program.define("atan".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _atan)),
@@ -724,6 +736,37 @@ fn sin(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
         Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "sin", x.typ()), Some(pos), program.path.clone())),
     }
 }
+fn _sinh(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    sinh(x, program, pos)
+}
+fn sinh(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.sinh())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(sinh(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(sinh(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(sinh(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "sinh", x.typ()), Some(pos), program.path.clone())),
+    }
+}
 fn _cos(program: &mut Program, pos: Position) -> Result<Value, Error> {
     let x = program.get(&"x".into()).unwrap().clone();
     cos(x, program, pos)
@@ -753,6 +796,37 @@ fn cos(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
             Ok(Value::Set(new_set))
         }
         Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "cos", x.typ()), Some(pos), program.path.clone())),
+    }
+}
+fn _cosh(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    cosh(x, program, pos)
+}
+fn cosh(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.cosh())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(cosh(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(cosh(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(cosh(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "cosh", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _tan(program: &mut Program, pos: Position) -> Result<Value, Error> {
@@ -848,6 +922,37 @@ fn asin(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
         Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "asin", x.typ()), Some(pos), program.path.clone())),
     }
 }
+fn _asinh(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    asinh(x, program, pos)
+}
+fn asinh(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.asinh())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(asinh(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(asinh(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(asinh(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "asinh", x.typ()), Some(pos), program.path.clone())),
+    }
+}
 fn _acos(program: &mut Program, pos: Position) -> Result<Value, Error> {
     let x = program.get(&"x".into()).unwrap().clone();
     acos(x, program, pos)
@@ -877,6 +982,37 @@ fn acos(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> 
             Ok(Value::Set(new_set))
         }
         Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "acos", x.typ()), Some(pos), program.path.clone())),
+    }
+}
+fn _acosh(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    acosh(x, program, pos)
+}
+fn acosh(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.acosh())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(acosh(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(acosh(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(acosh(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "acosh", x.typ()), Some(pos), program.path.clone())),
     }
 }
 fn _atan(program: &mut Program, pos: Position) -> Result<Value, Error> {
