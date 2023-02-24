@@ -240,12 +240,26 @@ impl Program {
                     }
                     return Ok(Value::Vector(v1))
                 }
+                (Value::Vector(mut v), Value::Number(n)) | (Value::Number(n), Value::Vector(mut v)) => {
+                    for _ in 0..v.len() {
+                        let left = v.remove(0);
+                        v.push(self.binary(op, left, Value::Number(n), pos.clone())?);
+                    }
+                    return Ok(Value::Vector(v))
+                }
                 (Value::Tuple(mut v1), Value::Tuple(mut v2)) if v1.len() == v2.len() => {
                     for _ in 0..v1.len() {
                         let left = v1.remove(0);
                         v1.push(self.binary(op, left, v2.remove(0), pos.clone())?);
                     }
                     return Ok(Value::Tuple(v1))
+                }
+                (Value::Tuple(mut v), Value::Number(n)) | (Value::Number(n), Value::Tuple(mut v)) => {
+                    for _ in 0..v.len() {
+                        let left = v.remove(0);
+                        v.push(self.binary(op, left, Value::Number(n), pos.clone())?);
+                    }
+                    return Ok(Value::Tuple(v))
                 }
                 (left, right) => match op {
                     BinaryOperator::Add => match (left, right) {
@@ -310,6 +324,44 @@ impl Program {
             }
         }
     }
+    pub fn unary(&self, op: UnaryOperator, value: Value, pos: Position) -> Result<Value, Error> {
+        match op {
+            UnaryOperator::Len => match value {
+                Value::Vector(v) | Value::Tuple(v) => {
+                    return Ok(Value::Number(v.len() as f64))
+                }
+                Value::Set(v) => {
+                    return Ok(Value::Number(v.len() as f64))
+                }
+                value => Err(Error::new(format!("cannot perform unary operation '{op}' on {}", value.typ()), Some(pos), self.path.clone()))
+            }
+            op => match value {
+                Value::Vector(mut v) => {
+                    for _ in 0..v.len() {
+                        let value = v.remove(0);
+                        v.push(self.unary(op, value, pos.clone())?);
+                    }
+                    return Ok(Value::Vector(v))
+                }
+                Value::Tuple(mut v) => {
+                    for _ in 0..v.len() {
+                        let value = v.remove(0);
+                        v.push(self.unary(op, value, pos.clone())?);
+                    }
+                    return Ok(Value::Tuple(v))
+                }
+                value => match op {
+                    UnaryOperator::Neg => match value {
+                        Value::Number(n) => Ok(Value::Number(-n)),
+                        value => Err(Error::new(format!("cannot perform unary operation '{op}' on {}", value.typ()), Some(pos), self.path.clone()))
+                    }
+                    UnaryOperator::Len => match value {
+                        value => Err(Error::new(format!("cannot perform unary operation '{op}' on {}", value.typ()), Some(pos), self.path.clone()))
+                    }
+                }
+            }
+        }
+    }
     pub fn expr(&mut self, expr: ExprBox) -> Result<Value, Error> {
         let ExprBox { expr, pos } = expr;
         match expr {
@@ -321,14 +373,7 @@ impl Program {
             }
             Expr::Unary { op, expr } => {
                 let value = self.expr(*expr)?;
-                match op {
-                    UnaryOperator::Neg => match value {
-                        value => Err(Error::new(format!("cannot perform unary operation '{op}' on {}", value.typ()), Some(pos), self.path.clone()))
-                    }
-                    UnaryOperator::Len => match value {
-                        value => Err(Error::new(format!("cannot perform unary operation '{op}' on {}", value.typ()), Some(pos), self.path.clone()))
-                    }
-                }
+                self.unary(op, value, pos)
             }
             Expr::Map { from, to } => Ok(Value::Map(from, *to)),
             Expr::Apply { expr, pattern } => {

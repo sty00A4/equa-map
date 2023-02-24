@@ -36,7 +36,10 @@ fn run() -> Result<(), Error> {
                 std::io::stdout().flush().map_err(|err| Error::msg(err.to_string()))?;
                 std::io::stdin().read_line(&mut text).map_err(|err| Error::msg(err.to_string()))?;
                 match execute(&"<stdin>".into(), text, &mut program) {
-                    Ok(Some(value)) => println!("{value}"),
+                    Ok(Some(value)) => {
+                        println!("{value}");
+                        program.define("ANS".into(), value, true);
+                    }
                     Ok(None) => {},
                     Err(err) => eprintln!("ERROR: {err}")
                 }
