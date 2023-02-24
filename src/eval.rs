@@ -51,7 +51,7 @@ impl Display for Value {
 impl Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Number(n) => write!(f, "{n:?}"),
+            Value::Number(n) => write!(f, "{n}"),
             Value::Vector(values) => write!(f, "[{}]", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
             Value::Tuple(values) => write!(f, "({})", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
             Value::Set(set) => write!(f, "{{{}}}", set.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
@@ -212,14 +212,42 @@ impl Program {
         Ok(None)
     }
 
-    pub fn expr(&mut self, expr: ExprBox) -> Result<Value, Error> {
-        let ExprBox { expr, pos } = expr;
-        match expr {
-            Expr::Atom(atom) => self.atom(atom),
-            Expr::Binary { op, left, right } => {
-                let left = self.expr(*left)?;
-                let right = self.expr(*right)?;
-                match op {
+    pub fn binary(&self, op: BinaryOperator, left: Value, right: Value, pos: Position) -> Result<Value, Error> {
+        match op {
+            BinaryOperator::Concat => match (left, right) {
+                (Value::Vector(mut v1), Value::Vector(v2)) if v1.len() == v2.len() => {
+                    for v in v2 {
+                        v1.push(v);
+                    }
+                    return Ok(Value::Vector(v1))
+                }
+                (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
+            }
+            BinaryOperator::Remove => match (left, right) {
+                (Value::Vector(mut v1), Value::Vector(v2)) if v1.len() == v2.len() => {
+                    for v in v2 {
+                        v1.push(v);
+                    }
+                    return Ok(Value::Vector(v1))
+                }
+                (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
+            }
+            op => match (left, right) {
+                (Value::Vector(mut v1), Value::Vector(mut v2)) if v1.len() == v2.len() => {
+                    for _ in 0..v1.len() {
+                        let left = v1.remove(0);
+                        v1.push(self.binary(op, left, v2.remove(0), pos.clone())?);
+                    }
+                    return Ok(Value::Vector(v1))
+                }
+                (Value::Tuple(mut v1), Value::Tuple(mut v2)) if v1.len() == v2.len() => {
+                    for _ in 0..v1.len() {
+                        let left = v1.remove(0);
+                        v1.push(self.binary(op, left, v2.remove(0), pos.clone())?);
+                    }
+                    return Ok(Value::Tuple(v1))
+                }
+                (left, right) => match op {
                     BinaryOperator::Add => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1 + n2)),
                         (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
@@ -269,6 +297,7 @@ impl Program {
                         (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::AddSub => match (left, right) {
+                        (Value::Number(n1), Value::Number(n2)) => Ok(Value::Tuple(vec![Value::Number(n1 + n2), Value::Number(n1 - n2)])),
                         (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::Concat => match (left, right) {
@@ -278,6 +307,17 @@ impl Program {
                         (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                 }
+            }
+        }
+    }
+    pub fn expr(&mut self, expr: ExprBox) -> Result<Value, Error> {
+        let ExprBox { expr, pos } = expr;
+        match expr {
+            Expr::Atom(atom) => self.atom(atom),
+            Expr::Binary { op, left, right } => {
+                let left = self.expr(*left)?;
+                let right = self.expr(*right)?;
+                self.binary(op, left, right, pos)
             }
             Expr::Unary { op, expr } => {
                 let value = self.expr(*expr)?;
