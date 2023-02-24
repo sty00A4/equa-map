@@ -5,10 +5,41 @@ use crate::{
     error::*
 };
 
+pub type ForeignMap = fn(&mut Program, Position) -> Result<Value, Error>;
+#[derive(Clone)]
+pub enum MapType {
+    Map(ExprPattern, ExprBox), Foreign(ExprPattern, ForeignMap),
+    Maps(Vec<MapType>),
+}
+impl PartialEq for MapType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Map(pattern1, expr1), Self::Map(pattern2, expr2)) => pattern1 == pattern2 && expr1 == expr2,
+            (Self::Foreign(pattern1, _), Self::Foreign(pattern2, _)) => pattern1 == pattern2,
+            (Self::Maps(maps1), Self::Maps(maps2)) => maps1 == maps2,
+            _ => false
+        }
+    }
+}
+impl Debug for MapType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Map(pattern, expr) => write!(f, "{pattern} -> {expr}"),
+            Self::Foreign(pattern, func) => write!(f, "{pattern} -> {:?}", func as *const ForeignMap),
+            Self::Maps(patterns) => write!(f, "maps({})", patterns.iter().map(|pattern| format!("{pattern:?}")).collect::<Vec<String>>().join("|")),
+        }
+    }
+}
+impl Display for MapType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub enum Value {
     Number(f64), Vector(Vec<Value>), Tuple(Vec<Value>), Set(HashSet<Value>),
-    Map(ExprPattern, ExprBox)
+    Map(MapType)
 }
 impl Value {
     pub fn typ(&self) -> String {
@@ -17,7 +48,7 @@ impl Value {
             Self::Vector(vector) => format!("vector of size {}", vector.len()),
             Self::Tuple(tuple) => format!("({})", tuple.iter().map(|v| v.typ()).collect::<Vec<String>>().join(" ")),
             Self::Set(set) => format!("set of size {}", set.len()),
-            Self::Map(_, _) => format!("map ({self})"),
+            Self::Map(_) => format!("map ({self})"),
         }
     }
     pub fn from_bool(x: bool) -> Self {
@@ -44,7 +75,7 @@ impl Display for Value {
             Value::Vector(values) => write!(f, "[{}]", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
             Value::Tuple(values) => write!(f, "({})", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
             Value::Set(set) => write!(f, "{{{}}}", set.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
-            Value::Map(from, to) => write!(f, "{from} -> {to}"),
+            Value::Map(map) => write!(f, "{map}"),
         }
     }
 }
@@ -55,7 +86,7 @@ impl Debug for Value {
             Value::Vector(values) => write!(f, "[{}]", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
             Value::Tuple(values) => write!(f, "({})", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
             Value::Set(set) => write!(f, "{{{}}}", set.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
-            Value::Map(from, to) => write!(f, "{from} -> {to}"),
+            Value::Map(map) => write!(f, "{map:?}"),
         }
     }
 }
@@ -377,6 +408,29 @@ impl Program {
             }
         }
     }
+    pub fn eval_map(&mut self, map: MapType, expr: Box<ExprBox>, pos: Position) -> Result<Value, Error> {
+        match map {
+            MapType::Map(from, to) => {
+                let error_add = format!(": {from} != {expr}");
+                let res = self.expr_pattern(from, *expr);
+                if let Err(mut res) = res {
+                    res.msg.push_str(error_add.as_str());
+                    return Err(res)
+                }
+                self.expr(to)
+            }
+            MapType::Foreign(from, func) => {
+                let error_add = format!(": {from} != {expr}");
+                let res = self.expr_pattern(from, *expr);
+                if let Err(mut res) = res {
+                    res.msg.push_str(error_add.as_str());
+                    return Err(res)
+                }
+                func(self, pos)
+            }
+            MapType::Maps(_) => todo!("multi maps"),
+        }
+    }
     pub fn expr(&mut self, expr: ExprBox) -> Result<Value, Error> {
         let ExprBox { expr, pos } = expr;
         match expr {
@@ -390,31 +444,19 @@ impl Program {
                 let value = self.expr(*expr)?;
                 self.unary(op, value, pos)
             }
-            Expr::Map { from, to } => Ok(Value::Map(from, *to)),
+            Expr::Map { from, to } => Ok(Value::Map(MapType::Map(from, *to))),
             Expr::Apply { expr, pattern } => {
                 let map = self.expr(*pattern)?;
-                if let Value::Map(from, to) = map {
-                    let error_add = format!(": {from} != {expr}");
-                    let res = self.expr_pattern(from, *expr);
-                    if let Err(mut res) = res {
-                        res.msg.push_str(error_add.as_str());
-                        return Err(res)
-                    }
-                    self.expr(to)
+                if let Value::Map(map) = map {
+                    self.eval_map(map, expr, pos)
                 } else {
                     Err(Error::new(format!("expected a map, not value: {map}"), Some(pos), self.path.clone()))
                 }
             }
             Expr::Call { func, pattern } => {
                 let map = self.expr(*func)?;
-                if let Value::Map(from, to) = map {
-                    let error_add = format!(": {from} != {pattern}");
-                    let res = self.expr_pattern(from, *pattern);
-                    if let Err(mut res) = res {
-                        res.msg.push_str(error_add.as_str());
-                        return Err(res)
-                    }
-                    self.expr(to)
+                if let Value::Map(map) = map {
+                    self.eval_map(map, pattern, pos)
                 } else {
                     Err(Error::new(format!("expected a map, not value: {map}"), Some(pos), self.path.clone()))
                 }
@@ -452,5 +494,50 @@ impl Program {
                 Ok(Value::Set(values))
             }
         }
+    }
+}
+
+pub fn std_program(path: Option<&String>) -> Program {
+    let mut program = if let Some(path) = path {
+        Program::with_path(path)
+    } else {
+        Program::new()
+    };
+
+    program.define("abs".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _abs)),
+    true);
+
+    program
+}
+fn _abs(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    abs(x, program, pos)
+}
+fn abs(x: Value, program: &mut Program, pos: Position) -> Result<Value, Error> {
+    match x {
+        Value::Number(number) => Ok(Value::Number(number.abs())),
+        Value::Vector(mut vector) => {
+            for _ in 0..vector.len() {
+                let value = vector.remove(0);
+                vector.push(abs(value, program, pos.clone())?);
+            }
+            Ok(Value::Vector(vector))
+        }
+        Value::Tuple(mut tuple) => {
+            for _ in 0..tuple.len() {
+                let value = tuple.remove(0);
+                tuple.push(abs(value, program, pos.clone())?);
+            }
+            Ok(Value::Tuple(tuple))
+        }
+        Value::Set(set) => {
+            let mut new_set = HashSet::new();
+            for v in set.into_iter() {
+                new_set.insert(abs(v, program, pos.clone())?);
+            }
+            Ok(Value::Set(new_set))
+        }
+        Value::Map(_) => Err(Error::new(format!("cannot perform map {:?} on {}", "abs", x.typ()), Some(pos), program.path.clone())),
     }
 }

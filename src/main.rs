@@ -21,7 +21,7 @@ fn run() -> Result<(), Error> {
     match args.next() {
         Some(path) => match fs::read_to_string(path) {
             Ok(text) => {
-                let mut program = eval::Program::with_path(path);
+                let mut program = eval::std_program(Some(path));
                 if let Some(value) = execute(path, text, &mut program)? {
                     println!("{value}");
                 }
@@ -29,7 +29,7 @@ fn run() -> Result<(), Error> {
             Err(err) => return Err(Error::msg(format!("error while opening file {path:?}: {err}")))
         }
         None => {
-            let mut program = eval::Program::new();
+            let mut program = eval::std_program(None);
             loop {
                 let mut text = String::new();
                 print!("> ");
