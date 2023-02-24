@@ -1,4 +1,4 @@
-use std::{collections::{HashSet, HashMap}, hash::Hash, fmt::Display};
+use std::{collections::{HashSet, HashMap}, hash::Hash, fmt::{Display, Debug}};
 use crate::{
     map::*,
     structure::*,
@@ -7,7 +7,7 @@ use crate::{
 
 #[derive(Clone, PartialEq)]
 pub enum Value {
-    Number(f64), Vector(Vec<Value>), Set(HashSet<Value>),
+    Number(f64), Vector(Vec<Value>), Tuple(Vec<Value>), Set(HashSet<Value>),
     Map(ExprPattern, ExprBox)
 }
 impl Value {
@@ -32,8 +32,20 @@ impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Number(n) => write!(f, "{n}"),
-            Value::Vector(values) => write!(f, "[{}]", values.iter().map(|v| v.to_string()).collect::<Vec<String>>().join(" ")),
-            Value::Set(set) => write!(f, "{{{}}}", set.iter().map(|v| v.to_string()).collect::<Vec<String>>().join(" ")),
+            Value::Vector(values) => write!(f, "[{}]", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
+            Value::Tuple(values) => write!(f, "({})", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
+            Value::Set(set) => write!(f, "{{{}}}", set.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
+            Value::Map(from, to) => write!(f, "{from} -> {to}"),
+        }
+    }
+}
+impl Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Number(n) => write!(f, "{n:?}"),
+            Value::Vector(values) => write!(f, "[{}]", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
+            Value::Tuple(values) => write!(f, "({})", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
+            Value::Set(set) => write!(f, "{{{}}}", set.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
             Value::Map(from, to) => write!(f, "{from} -> {to}"),
         }
     }
@@ -81,8 +93,17 @@ impl Program {
                 if pattern_exprs.len() != exprs.len() {
                     return Err(Error::new(format!("pattern doesn't apply"), Some(pos), self.path.clone()))
                 }
-                for i in 0..pattern_exprs.len() {
-                    self.expr_pattern(pattern_exprs.remove(i), exprs.remove(i))?;
+                for _ in 0..pattern_exprs.len() {
+                    self.expr_pattern(pattern_exprs.remove(0), exprs.remove(0))?;
+                }
+                Ok(())
+            }
+            (AtomPattern::Tuple(mut pattern_exprs), Atom::Tuple(mut exprs)) => {
+                if pattern_exprs.len() != exprs.len() {
+                    return Err(Error::new(format!("pattern doesn't apply"), Some(pos), self.path.clone()))
+                }
+                for _ in 0..pattern_exprs.len() {
+                    self.expr_pattern(pattern_exprs.remove(0), exprs.remove(0))?;
                 }
                 Ok(())
             }
@@ -90,8 +111,8 @@ impl Program {
                 if pattern_exprs.len() != exprs.len() {
                     return Err(Error::new(format!("pattern doesn't apply"), Some(pos), self.path.clone()))
                 }
-                for i in 0..pattern_exprs.len() {
-                    self.expr_pattern(pattern_exprs.remove(i), exprs.remove(i))?;
+                for _ in 0..pattern_exprs.len() {
+                    self.expr_pattern(pattern_exprs.remove(0), exprs.remove(0))?;
                 }
                 Ok(())
             }
@@ -130,12 +151,13 @@ impl Program {
             self.instr(instr)?;
             return Ok(None)
         }
+        let mut ret_value = None;
         for instr in instrs {
-            self.instr(instr)?;
+            ret_value = self.instr(instr)?;
         }
-        Ok(None)
+        Ok(ret_value)
     }
-    pub fn instr(&mut self, instr: InstrBox) -> Result<(), Error> {
+    pub fn instr(&mut self, instr: InstrBox) -> Result<Option<Value>, Error> {
         let InstrBox { instr, pos: _ } = instr;
         match instr {
             Instr::Define { id: AtomBox { atom: id, pos: id_pos }, expr } => {
@@ -176,9 +198,9 @@ impl Program {
                     return Err(Error::new(format!("expected variable, got: {id}"), Some(id_pos), self.path.clone()))
                 }
             }
-            Instr::Expr(expr) => { self.expr(expr)?; },
+            Instr::Expr(expr) => return Ok(Some(self.expr(expr)?)),
         };
-        Ok(())
+        Ok(None)
     }
 
     pub fn expr(&mut self, expr: ExprBox) -> Result<Value, Error> {
@@ -263,7 +285,26 @@ impl Program {
             Expr::Apply { expr, pattern } => {
                 let map = self.expr(*pattern)?;
                 if let Value::Map(from, to) = map {
-                    self.expr_pattern(from, *expr)?;
+                    let error_add = format!(": {from} != {expr}");
+                    let res = self.expr_pattern(from, *expr);
+                    if let Err(mut res) = res {
+                        res.msg.push_str(error_add.as_str());
+                        return Err(res)
+                    }
+                    self.expr(to)
+                } else {
+                    Err(Error::new(format!("expected a map, not value: {map}"), Some(pos), self.path.clone()))
+                }
+            }
+            Expr::Call { func, pattern } => {
+                let map = self.expr(*func)?;
+                if let Value::Map(from, to) = map {
+                    let error_add = format!(": {from} != {pattern}");
+                    let res = self.expr_pattern(from, *pattern);
+                    if let Err(mut res) = res {
+                        res.msg.push_str(error_add.as_str());
+                        return Err(res)
+                    }
                     self.expr(to)
                 } else {
                     Err(Error::new(format!("expected a map, not value: {map}"), Some(pos), self.path.clone()))
@@ -286,6 +327,13 @@ impl Program {
                     values.push(self.expr(expr)?);
                 }
                 Ok(Value::Vector(values))
+            }
+            Atom::Tuple(exprs) => {
+                let mut values = vec![];
+                for expr in exprs {
+                    values.push(self.expr(expr)?);
+                }
+                Ok(Value::Tuple(values))
             }
             Atom::Set(exprs) => {
                 let mut values = HashSet::new();

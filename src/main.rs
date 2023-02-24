@@ -10,6 +10,7 @@ use error::*;
 fn execute(path: &String, text: String, program: &mut eval::Program) -> Result<Option<eval::Value>, Error> {
     let tokens = lexer::lex(path, text)?;
     let instrs = structure::parse(path, tokens)?;
+    // println!("{}", instrs.iter().map(|x| x.to_string()).collect::<Vec<String>>().join("\n"));
     program.instrs(instrs)
 }
 

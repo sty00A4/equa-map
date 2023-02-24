@@ -17,9 +17,9 @@ impl Position {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Error {
-    msg: String,
-    pos: Option<Position>,
-    path: Option<String>
+    pub msg: String,
+    pub pos: Option<Position>,
+    pub path: Option<String>
 }
 impl Error {
     pub fn new(msg: String, pos: Option<Position>, path: Option<String>) -> Self {
@@ -34,7 +34,7 @@ impl Display for Error {
         if let Some(path) = &self.path {
             write!(f, "{path}")?;
             if let Some(pos) = &self.pos {
-                write!(f, ":{}:{}", pos.ln.start + 1, pos.col.start + 1)?;
+                write!(f, ":{}:{}", pos.ln.start + 1, pos.col.start + if pos.ln.start > 0 { 0 } else { 1 })?;
             }
             write!(f, ": ")?;
         }

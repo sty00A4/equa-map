@@ -8,7 +8,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub enum AtomPattern {
     Number(f64), Var(String), Expr(Box<ExprPattern>),
-    Vector(Vec<ExprPattern>), Set(Vec<ExprPattern>),
+    Vector(Vec<ExprPattern>), Tuple(Vec<ExprPattern>), Set(Vec<ExprPattern>),
 }
 impl AtomPattern {
     pub fn from_atom(atom: AtomBox) -> Result<Self, Error> {
@@ -22,6 +22,13 @@ impl AtomPattern {
                     vs.push(ExprPattern::from_expr(expr)?);
                 }
                 Ok(Self::Vector(vs))
+            }
+            Atom::Tuple(v) => {
+                let mut vs = vec![];
+                for expr in v.into_iter() {
+                    vs.push(ExprPattern::from_expr(expr)?);
+                }
+                Ok(Self::Tuple(vs))
             }
             Atom::Set(s) => {
                 let mut ps = vec![];
@@ -40,6 +47,7 @@ impl Display for AtomPattern {
             Self::Var(v) => write!(f, "{v}"),
             Self::Expr(expr) => write!(f, "({expr})"),
             Self::Vector(values) => write!(f, "[{}]", values.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(" ")),
+            Self::Tuple(values) => write!(f, "({})", values.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(" ")),
             Self::Set(values) => write!(f, "{{{}}}", values.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(" ")),
         }
     }
@@ -62,6 +70,7 @@ impl ExprPattern {
             }),
             Expr::Map { from: _, to: _ } => Err(Error::new("cannot convert a map to a pattern".into(), Some(expr.pos), None)),
             Expr::Apply { expr: _, pattern: _ } => Err(Error::new("cannot convert a application to a pattern".into(), Some(expr.pos), None)),
+            Expr::Call { func: _, pattern: _ } => Err(Error::new("cannot convert a call to a pattern".into(), Some(expr.pos), None)),
         }
     }
 }

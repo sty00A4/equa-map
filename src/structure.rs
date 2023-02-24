@@ -4,7 +4,7 @@ use crate::{error::*, lexer::*, map::ExprPattern};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Atom {
     Number(f64), Var(String), Expr(Box<ExprBox>),
-    Vector(Vec<ExprBox>), Set(Vec<ExprBox>),
+    Vector(Vec<ExprBox>), Tuple(Vec<ExprBox>), Set(Vec<ExprBox>),
 }
 impl Display for Atom {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -13,6 +13,7 @@ impl Display for Atom {
             Self::Var(v) => write!(f, "{v}"),
             Self::Expr(expr) => write!(f, "({expr})"),
             Self::Vector(v) => write!(f, "[{}]", v.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(" ")),
+            Self::Tuple(v) => write!(f, "({})", v.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(" ")),
             Self::Set(s) => write!(f, "{{{}}}", s.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(" ")),
         }
     }
@@ -112,8 +113,8 @@ pub enum Expr {
     Atom(AtomBox),
     Binary { op: BinaryOperator, left: Box<ExprBox>, right: Box<ExprBox> },
     Unary { op: UnaryOperator, expr: Box<ExprBox> },
-    Map { from: ExprPattern, to: Box<ExprBox> },
-    Apply { expr: Box<ExprBox>, pattern: Box<ExprBox> },
+    Map { from: ExprPattern, to: Box<ExprBox> }, Apply { expr: Box<ExprBox>, pattern: Box<ExprBox> },
+    Call { func: Box<ExprBox>, pattern: Box<ExprBox> }
 }
 impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -123,6 +124,7 @@ impl Display for Expr {
             Self::Unary { op, expr } => write!(f, "{op} {expr}"),
             Self::Map { from, to } => write!(f, "{from} -> {to}"),
             Self::Apply { expr, pattern } => write!(f, "{expr} <- {pattern}"),
+            Self::Call { func, pattern } => write!(f, "{func}({pattern})"),
         }
     }
 }
@@ -211,11 +213,19 @@ impl Parser {
             Err(Error::new(format!("expected {}, not end of input", expect.name()), None, Some(self.path.clone())))
         }
     }
+    pub fn advance_if(&mut self, token_: TokenType) {
+        if let Some(Token { token, pos: _ }) = self.token_ref() {
+            if token == &token_ {
+                self.token();
+            }
+        }
+    }
 
     pub fn parse(&mut self) -> Result<Vec<InstrBox>, Error> {
         let mut instrs = vec![];
         while self.token_ref().is_some() {
             instrs.push(self.instr()?);
+            self.advance_if(TokenType::End);
         }
         Ok(instrs)
     }
@@ -344,7 +354,18 @@ impl Parser {
                 return Ok(ExprBox::new(Expr::Unary { op, expr }, pos))
             }
         }
-        Ok(self.atom()?.expr())
+        Ok(self.call()?)
+    }
+    pub fn call(&mut self) -> Result<ExprBox, Error> {
+        let mut left = self.atom()?.expr();
+        while let Some(Token { token, pos: _ }) = self.token_ref() {
+            if token != &TokenType::EvalIn { break }
+            let mut pos = left.pos.clone();
+            let pattern = Box::new(self.atom()?.expr());
+            pos.extend(&pattern.pos);
+            left = ExprBox::new(Expr::Call { func: Box::new(left), pattern }, pos);
+        }
+        Ok(left)
     }
     pub fn atom(&mut self) -> Result<AtomBox, Error> {
         let Some(Token { token, mut pos }) = self.token() else {
@@ -355,8 +376,19 @@ impl Parser {
             TokenType::Var(n) => Ok(AtomBox::new(Atom::Var(n), pos)),
             TokenType::EvalIn => {
                 let expr = self.expr()?;
-                self.expect(TokenType::EvalOut)?;
-                Ok(expr.atom())
+                if let Some(Token { token: TokenType::EvalOut, pos: _ }) = self.token_ref() {
+                    self.expect(TokenType::EvalOut)?;
+                    Ok(expr.atom())
+                } else {
+                    let mut exprs = vec![expr];
+                    while let Some(Token { token, pos: _ }) = self.token_ref() {
+                        if token == &TokenType::EvalOut { break }
+                        exprs.push(self.expr()?);
+                    }
+                    let Token { token: _, pos: end_pos } = self.expect(TokenType::EvalOut)?;
+                    pos.extend(&end_pos);
+                    Ok(AtomBox::new(Atom::Tuple(exprs), pos))
+                }
             }
             TokenType::VecIn => {
                 let mut exprs = vec![];
