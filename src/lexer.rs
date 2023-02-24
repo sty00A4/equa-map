@@ -297,11 +297,11 @@ impl Lexer {
                     Err(err) => Err(Error::new(format!("error while parsing number {number:?}: {err}"), Some(pos), Some(self.path.clone())))
                 }
             }
-            c if c.is_alphabetic() => {
+            c if c.is_alphabetic() || c == '_' => {
                 let mut var = String::from(c);
                 self.advance();
                 while let Some(c) = self.get() {
-                    if !c.is_alphanumeric() { break }
+                    if !c.is_alphanumeric() && c != '_' { break }
                     var.push(c);
                     pos.extend(&self.pos());
                     self.advance();
