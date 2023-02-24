@@ -10,7 +10,7 @@ pub enum TokenType {
     Len, Map, Apply,
     EvalIn, EvalOut, VecIn, VecOut, SetIn, SetOut,
     Define, Const, Assign,
-    End,
+    End, Sep
 }
 impl TokenType {
     pub fn name(&self) -> String {
@@ -54,6 +54,7 @@ impl Display for TokenType {
             Self::Const => write!(f, "::"),
             Self::Assign => write!(f, ":="),
             Self::End => write!(f, ";"),
+            Self::Sep => write!(f, ","),
         }
     }
 }
@@ -241,6 +242,10 @@ impl Lexer {
             ';' => {
                 self.advance();
                 Ok(Some(Token::new(TokenType::End, pos)))
+            }
+            ',' => {
+                self.advance();
+                Ok(Some(Token::new(TokenType::Sep, pos)))
             }
             c if c.is_digit(10) => {
                 let mut number = String::from(c);

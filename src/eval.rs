@@ -26,7 +26,7 @@ impl Debug for MapType {
         match self {
             Self::Map(pattern, expr) => write!(f, "{pattern} -> {expr}"),
             Self::Foreign(pattern, func) => write!(f, "{pattern} -> {:?}", func as *const ForeignMap),
-            Self::Maps(patterns) => write!(f, "maps({})", patterns.iter().map(|pattern| format!("{pattern:?}")).collect::<Vec<String>>().join("|")),
+            Self::Maps(patterns) => write!(f, "maps({})", patterns.iter().map(|pattern| format!("{pattern:?}")).collect::<Vec<String>>().join(" | ")),
         }
     }
 }
@@ -72,9 +72,9 @@ impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Number(n) => write!(f, "{n}"),
-            Value::Vector(values) => write!(f, "[{}]", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
-            Value::Tuple(values) => write!(f, "({})", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
-            Value::Set(set) => write!(f, "{{{}}}", set.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(" ")),
+            Value::Vector(values) => write!(f, "[{}]", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(", ")),
+            Value::Tuple(values) => write!(f, "({})", values.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(", ")),
+            Value::Set(set) => write!(f, "{{{}}}", set.iter().map(|v| format!("{v:?}")).collect::<Vec<String>>().join(", ")),
             Value::Map(map) => write!(f, "{map}"),
         }
     }

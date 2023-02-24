@@ -12,9 +12,9 @@ impl Display for Atom {
             Self::Number(n) => write!(f, "{n}"),
             Self::Var(v) => write!(f, "{v}"),
             Self::Expr(expr) => write!(f, "({expr})"),
-            Self::Vector(v) => write!(f, "[{}]", v.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(" ")),
-            Self::Tuple(v) => write!(f, "({})", v.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(" ")),
-            Self::Set(s) => write!(f, "{{{}}}", s.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(" ")),
+            Self::Vector(v) => write!(f, "[{}]", v.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(", ")),
+            Self::Tuple(v) => write!(f, "({})", v.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(", ")),
+            Self::Set(s) => write!(f, "{{{}}}", s.iter().map(|expr| expr.to_string()).collect::<Vec<String>>().join(", ")),
         }
     }
 }
@@ -380,10 +380,12 @@ impl Parser {
                     self.expect(TokenType::EvalOut)?;
                     Ok(expr.atom())
                 } else {
+                    self.advance_if(TokenType::Sep);
                     let mut exprs = vec![expr];
                     while let Some(Token { token, pos: _ }) = self.token_ref() {
                         if token == &TokenType::EvalOut { break }
                         exprs.push(self.expr()?);
+                        self.advance_if(TokenType::Sep);
                     }
                     let Token { token: _, pos: end_pos } = self.expect(TokenType::EvalOut)?;
                     pos.extend(&end_pos);
@@ -395,6 +397,7 @@ impl Parser {
                 while let Some(Token { token, pos: _ }) = self.token_ref() {
                     if token == &TokenType::VecOut { break }
                     exprs.push(self.expr()?);
+                    self.advance_if(TokenType::Sep);
                 }
                 let Token { token: _, pos: end_pos } = self.expect(TokenType::VecOut)?;
                 pos.extend(&end_pos);
@@ -405,6 +408,7 @@ impl Parser {
                 while let Some(Token { token, pos: _ }) = self.token_ref() {
                     if token == &TokenType::SetOut { break }
                     exprs.push(self.expr()?);
+                    self.advance_if(TokenType::Sep);
                 }
                 let Token { token: _, pos: end_pos } = self.expect(TokenType::SetOut)?;
                 pos.extend(&end_pos);
