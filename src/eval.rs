@@ -67,6 +67,38 @@ impl Value {
             Self::Map(_) => true,
         }
     }
+    pub fn atom(self, pos: Position, path: Option<String>) -> Result<AtomBox, Error> {
+        match self {
+            Value::Number(n) => Ok(AtomBox::new(Atom::Number(n), pos)),
+            Value::Vector(values) => {
+                let mut exprs = vec![];
+                for value in values {
+                    exprs.push(value.atom(pos.clone(), path.clone())?.expr());
+                }
+                Ok(AtomBox::new(Atom::Vector(exprs), pos))
+            }
+            Value::Tuple(values) => {
+                let mut exprs = vec![];
+                for value in values {
+                    exprs.push(value.atom(pos.clone(), path.clone())?.expr());
+                }
+                Ok(AtomBox::new(Atom::Tuple(exprs), pos))
+            }
+            Value::Set(values) => {
+                let mut exprs = vec![];
+                for value in values {
+                    exprs.push(value.atom(pos.clone(), path.clone())?.expr());
+                }
+                Ok(AtomBox::new(Atom::Tuple(exprs), pos))
+            }
+            Value::Map(map) => match map {
+                MapType::Map(from, to) => Ok(AtomBox::new(Atom::Expr(
+                    Box::new(ExprBox::new(Expr::Map { from, to: Box::new(to) }, pos.clone()))), pos)),
+                MapType::Foreign(_, _) => Err(Error::new("cannot turn foreign map into atom expression".into(), Some(pos), path)),
+                MapType::Maps(_) => Err(Error::new("cannot turn multi map into atom expression".into(), Some(pos), path)),
+            }
+        }
+    }
 }
 impl Hash for Value {
     fn hash<H: std::hash::Hasher>(&self, _: &mut H) {}
@@ -472,7 +504,9 @@ impl Program {
                 }
             }
             Expr::Iter { over, map } => {
-                let ExprBox { expr: over, pos: over_pos } = *over;
+                let over_pos = over.pos.clone();
+                let over = self.expr(*over)?.atom(over_pos, self.path.clone())?.expr();
+                let ExprBox { expr: over, pos: over_pos } = over;
                 let map_pos = map.pos.clone();
                 let map = self.expr(*map)?;
                 if let Value::Map(map) = map {
@@ -505,7 +539,9 @@ impl Program {
                 }
             }
             Expr::Filter { over, map } => {
-                let ExprBox { expr: over, pos: over_pos } = *over;
+                let over_pos = over.pos.clone();
+                let over = self.expr(*over)?.atom(over_pos, self.path.clone())?.expr();
+                let ExprBox { expr: over, pos: over_pos } = over;
                 let map_pos = map.pos.clone();
                 let map = self.expr(*map)?;
                 if let Value::Map(map) = map {
@@ -537,7 +573,7 @@ impl Program {
                             }
                             Ok(Value::Set(values))
                         }
-                        over => Err(Error::new(format!("cannot iterate over: {}", over), Some(over_pos), self.path.clone()))
+                        over => Err(Error::new(format!("cannot iterate over: {over}"), Some(over_pos), self.path.clone()))
                     }
                 } else {
                     Err(Error::new(format!("expected a map, not value: {map}"), Some(map_pos), self.path.clone()))
