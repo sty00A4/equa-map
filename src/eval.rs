@@ -11,6 +11,15 @@ pub enum Value {
     Map(ExprPattern, ExprBox)
 }
 impl Value {
+    pub fn typ(&self) -> String {
+        match self {
+            Self::Number(_) => format!("number"),
+            Self::Vector(vector) => format!("vector of size {}", vector.len()),
+            Self::Tuple(tuple) => format!("({})", tuple.iter().map(|v| v.typ()).collect::<Vec<String>>().join(" ")),
+            Self::Set(set) => format!("set of size {}", set.len()),
+            Self::Map(_, _) => format!("map ({self})"),
+        }
+    }
     pub fn from_bool(x: bool) -> Self {
         if x {
             Value::Number(1.)
@@ -213,60 +222,60 @@ impl Program {
                 match op {
                     BinaryOperator::Add => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1 + n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::Sub => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1 - n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::Mul => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1 * n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::Div => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1 / n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::Mod => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1 % n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::Pow => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1.powf(n2))),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::EQ => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::from_bool(n1 == n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::NE => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::from_bool(n1 != n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::LT => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::from_bool(n1 < n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::GT => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::from_bool(n1 > n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::LE => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::from_bool(n1 <= n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::GE => match (left, right) {
                         (Value::Number(n1), Value::Number(n2)) => Ok(Value::from_bool(n1 >= n2)),
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::AddSub => match (left, right) {
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::Concat => match (left, right) {
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                     BinaryOperator::Remove => match (left, right) {
-                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {left} with {right}"), Some(pos), self.path.clone()))
+                        (left, right) => Err(Error::new(format!("cannot perform binary operation '{op}' on {} with {}", left.typ(), right.typ()), Some(pos), self.path.clone()))
                     }
                 }
             }
@@ -274,10 +283,10 @@ impl Program {
                 let value = self.expr(*expr)?;
                 match op {
                     UnaryOperator::Neg => match value {
-                        value => Err(Error::new(format!("cannot perform unary operation '{op}' on {value}"), Some(pos), self.path.clone()))
+                        value => Err(Error::new(format!("cannot perform unary operation '{op}' on {}", value.typ()), Some(pos), self.path.clone()))
                     }
                     UnaryOperator::Len => match value {
-                        value => Err(Error::new(format!("cannot perform unary operation '{op}' on {value}"), Some(pos), self.path.clone()))
+                        value => Err(Error::new(format!("cannot perform unary operation '{op}' on {}", value.typ()), Some(pos), self.path.clone()))
                     }
                 }
             }
