@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::{
-    structure::{BinaryOperator, UnaryOperator, ExprBox, Expr, AtomBox, Atom},
+    structure::*,
     error::*
 };
 
