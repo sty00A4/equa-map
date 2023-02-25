@@ -245,9 +245,6 @@ impl Program {
             Instr::Define { id: AtomBox { atom: id, pos: id_pos }, expr } => {
                 let value = self.expr(expr)?;
                 if let Atom::Var(var) = id {
-                    if self.get(&var).is_some() {
-                        return Err(Error::new(format!("{var:?} is already defined"), Some(id_pos), self.path.clone()))
-                    }
                     self.define(var, value, false);
                 } else {
                     return Err(Error::new(format!("expected variable, got: {id}"), Some(id_pos), self.path.clone()))
@@ -260,22 +257,6 @@ impl Program {
                         return Err(Error::new(format!("{var:?} is already defined"), Some(id_pos), self.path.clone()))
                     }
                     self.define(var, value, true);
-                } else {
-                    return Err(Error::new(format!("expected variable, got: {id}"), Some(id_pos), self.path.clone()))
-                }
-            }
-            Instr::Assign { id: AtomBox { atom: id, pos: id_pos }, expr } => {
-                let new_value = self.expr(expr)?;
-                if let Atom::Var(var) = id {
-                    if let Some(const_) = self.is_const(&var) {
-                        if const_ {
-                            return Err(Error::new(format!("{var:?} is immutable"), Some(id_pos), self.path.clone()))
-                        }
-                        let value = self.get_mut(&var).unwrap();
-                        *value = new_value;
-                    } else {
-                        return Err(Error::new(format!("{var:?} is not defined"), Some(id_pos), self.path.clone()))
-                    }
                 } else {
                     return Err(Error::new(format!("expected variable, got: {id}"), Some(id_pos), self.path.clone()))
                 }

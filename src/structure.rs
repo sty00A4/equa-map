@@ -166,7 +166,6 @@ impl Display for ExprBox {
 pub enum Instr {
     Define { id: AtomBox, expr: ExprBox },
     Const { id: AtomBox, expr: ExprBox },
-    Assign { id: AtomBox, expr: ExprBox },
     Expr(ExprBox)
 }
 impl Display for Instr {
@@ -174,7 +173,6 @@ impl Display for Instr {
         match self {
             Self::Define { id, expr } => write!(f, "{id} : {expr}"),
             Self::Const { id, expr } => write!(f, "{id} :: {expr}"),
-            Self::Assign { id, expr } => write!(f, "{id} := {expr}"),
             Self::Expr(expr) => write!(f, "{expr}"),
         }
     }
@@ -257,14 +255,6 @@ impl Parser {
                 let expr = self.expr()?;
                 pos.extend(&expr.pos);
                 Ok(InstrBox::new(Instr::Const { id, expr }, pos))
-            }
-            TokenType::Assign => {
-                let id = expr.atom();
-                let mut pos = id.pos.clone();
-                let Token { token: _, pos: _ } = self.token().unwrap();
-                let expr = self.expr()?;
-                pos.extend(&expr.pos);
-                Ok(InstrBox::new(Instr::Assign { id, expr }, pos))
             }
             _ => Ok(expr.instr())
         }

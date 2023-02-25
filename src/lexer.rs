@@ -9,7 +9,7 @@ pub enum TokenType {
     AddSub, Concat, Remove,
     Len, Map, Apply, Iter, Filter,
     EvalIn, EvalOut, VecIn, VecOut, SetIn, SetOut,
-    Define, Const, Assign,
+    Define, Const,
     End, Sep
 }
 impl TokenType {
@@ -66,7 +66,6 @@ impl Display for TokenType {
             Self::SetOut => write!(f, "}}"),
             Self::Define => write!(f, ":"),
             Self::Const => write!(f, "::"),
-            Self::Assign => write!(f, ":="),
             Self::End => write!(f, ";"),
             Self::Sep => write!(f, ","),
         }
@@ -231,11 +230,6 @@ impl Lexer {
                     pos.extend(&self.pos());
                     self.advance();
                     return Ok(Some(Token::new(TokenType::Const, pos)))
-                }
-                if self.get() == Some('=') {
-                    pos.extend(&self.pos());
-                    self.advance();
-                    return Ok(Some(Token::new(TokenType::Assign, pos)))
                 }
                 Ok(Some(Token::new(TokenType::Define, pos)))
             }
