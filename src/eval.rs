@@ -1,4 +1,4 @@
-use std::{collections::{HashSet, HashMap}, hash::Hash, fmt::{Display, Debug}};
+use std::{collections::{HashSet, HashMap}, hash::Hash, fmt::{Display, Debug}, vec};
 use crate::{
     map::*,
     structure::*,
@@ -611,6 +611,24 @@ pub fn std_program(path: Option<&String>) -> Program {
         Program::new()
     };
 
+    program.define("max".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Tuple(vec![
+            ExprPattern::Atom(AtomPattern::Var("x".into())),
+            ExprPattern::Atom(AtomPattern::Var("y".into())),
+        ])), _max)),
+    true);
+    program.define("min".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Tuple(vec![
+            ExprPattern::Atom(AtomPattern::Var("x".into())),
+            ExprPattern::Atom(AtomPattern::Var("y".into())),
+        ])), _min)),
+    true);
+    program.define("max_out".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _max_out)),
+    true);
+    program.define("min_out".into(),
+        Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _min_out)),
+    true);
     program.define("sqrt".into(),
         Value::Map(MapType::Foreign(ExprPattern::Atom(AtomPattern::Var("x".into())), _sqrt)),
     true);
@@ -694,6 +712,124 @@ pub fn std_program(path: Option<&String>) -> Program {
     true);
 
     program
+}
+fn _max(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    let y = program.get(&"y".into()).unwrap().clone();
+    match (x, y) {
+        (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1.max(n2))),
+        (x, y) => Err(Error::new(format!("cannot perform map {:?} on {} and {}", "max", x.typ(), y.typ()), Some(pos), program.path.clone())),
+    }
+}
+fn _min(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    let y = program.get(&"y".into()).unwrap().clone();
+    match (x, y) {
+        (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1.min(n2))),
+        (x, y) => Err(Error::new(format!("cannot perform map {:?} on {} and {}", "min", x.typ(), y.typ()), Some(pos), program.path.clone())),
+    }
+}
+fn _max_out(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    match x {
+        Value::Vector(vector) if vector.len() > 0 => {
+            let mut last: Option<f64> = None;
+            for value in vector {
+                let Value::Number(number) = value else {
+                    return Err(Error::new(format!("cannot perform map {:?} on this vector because it contains non-number values",
+                    "max_out"), Some(pos), program.path.clone()))
+                };
+                if let Some(before) = last {
+                    last = if number > before { Some(number) } else { Some(before) };
+                } else {
+                    last = Some(number);
+                }
+            }
+            Ok(Value::Number(last.unwrap()))
+        }
+        Value::Tuple(tuple) if tuple.len() > 0 => {
+            let mut last: Option<f64> = None;
+            for value in tuple {
+                let Value::Number(number) = value else {
+                    return Err(Error::new(format!("cannot perform map {:?} on this tuple because it contains non-number values",
+                    "max_out"), Some(pos), program.path.clone()))
+                };
+                if let Some(before) = last {
+                    last = if number > before { Some(number) } else { Some(before) };
+                } else {
+                    last = Some(number);
+                }
+            }
+            Ok(Value::Number(last.unwrap()))
+        }
+        Value::Set(set) if set.len() > 0 => {
+            let mut last: Option<f64> = None;
+            for value in set {
+                let Value::Number(number) = value else {
+                    return Err(Error::new(format!("cannot perform map {:?} on this set because it contains non-number values",
+                    "max_out"), Some(pos), program.path.clone()))
+                };
+                if let Some(before) = last {
+                    last = if number > before { Some(number) } else { Some(before) };
+                } else {
+                    last = Some(number);
+                }
+            }
+            Ok(Value::Number(last.unwrap()))
+        }
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "max_out", x.typ()), Some(pos), program.path.clone())),
+    }
+}
+fn _min_out(program: &mut Program, pos: Position) -> Result<Value, Error> {
+    let x = program.get(&"x".into()).unwrap().clone();
+    match x {
+        Value::Vector(vector) if vector.len() > 0 => {
+            let mut last: Option<f64> = None;
+            for value in vector {
+                let Value::Number(number) = value else {
+                    return Err(Error::new(format!("cannot perform map {:?} on this vector because it contains non-number values",
+                    "min_out"), Some(pos), program.path.clone()))
+                };
+                if let Some(before) = last {
+                    last = if number < before { Some(number) } else { Some(before) };
+                } else {
+                    last = Some(number);
+                }
+            }
+            Ok(Value::Number(last.unwrap()))
+        }
+        Value::Tuple(tuple) if tuple.len() > 0 => {
+            let mut last: Option<f64> = None;
+            for value in tuple {
+                let Value::Number(number) = value else {
+                    return Err(Error::new(format!("cannot perform map {:?} on this tuple because it contains non-number values",
+                    "min_out"), Some(pos), program.path.clone()))
+                };
+                if let Some(before) = last {
+                    last = if number < before { Some(number) } else { Some(before) };
+                } else {
+                    last = Some(number);
+                }
+            }
+            Ok(Value::Number(last.unwrap()))
+        }
+        Value::Set(set) if set.len() > 0 => {
+            let mut last: Option<f64> = None;
+            for value in set {
+                let Value::Number(number) = value else {
+                    return Err(Error::new(format!("cannot perform map {:?} on this set because it contains non-number values",
+                    "min_out"), Some(pos), program.path.clone()))
+                };
+                if let Some(before) = last {
+                    last = if number < before { Some(number) } else { Some(before) };
+                } else {
+                    last = Some(number);
+                }
+            }
+            Ok(Value::Number(last.unwrap()))
+        }
+        x => Err(Error::new(format!("cannot perform map {:?} on {}", "min_out", x.typ()), Some(pos), program.path.clone())),
+    }
 }
 fn _sqrt(program: &mut Program, pos: Position) -> Result<Value, Error> {
     let x = program.get(&"x".into()).unwrap().clone();

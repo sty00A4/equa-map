@@ -1,4 +1,4 @@
-#![allow(unused_imports, dead_code)]
+#![allow(unused_imports, dead_code, unused_assignments)]
 use std::{env, process::exit, fs, io::Write};
 mod error;
 mod lexer;
