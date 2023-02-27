@@ -193,7 +193,6 @@ impl Display for InstrBox {
     }
 }
 
-
 pub struct Parser {
     path: String,
     tokens: Vec<Token>,
